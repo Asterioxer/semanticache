@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>semanticache demo</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    color: #38bdf8;
+  }
+  .subtitle {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #475569;
+    border-radius: 0.375rem;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.95rem;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #38bdf8;
+  }
+  button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: #38bdf8;
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  button:hover { background: #7dd3fc; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .result {
+    margin-top: 1rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge-hit { background: #22c55e; color: #052e16; }
+  .badge-miss { background: #f59e0b; color: #451a03; }
+  .meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+  .response-box {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #cbd5e1;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+  .stat-card {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+  }
+  th {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  td {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #cbd5e1;
+  }
+  .truncate {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .empty {
+    color: #64748b;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+  }
+  .spinner {
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 2px solid #0f172a;
+    border-top: 2px solid #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 0.4rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useCallback } = React;
+
+function App() {
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [entries, setEntries] = useState([]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/stats");
+      const data = await res.json();
+      setStats(data);
+    } catch (e) { console.error(e); }
+  }, []);
+
+  const fetchEntries = useCallback(async () => {
+    try {
+      const res = await fetch("/entries?limit=20");
+      const data = await res.json();
+      setEntries(data);
+    } catch (e) { console.error(e); }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    fetchEntries();
+    const id = setInterval(() => { fetchStats(); fetchEntries(); }, 3000);
+    return () => clearInterval(id);
+  }, [fetchStats, fetchEntries]);
+
+  const handleAsk = async (e) => {
+    e.preventDefault();
+    if (!prompt.trim() || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+      const data = await res.json();
+      setResult(data);
+      fetchStats();
+      fetchEntries();
+    } catch (err) {
+      setResult({ response: "Error: " + err.message, cache_hit: false, latency_ms: 0 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (ts) => {
+    if (!ts) return "—";
+    const d = new Date(ts * 1000);
+    return d.toLocaleTimeString();
+  };
+
+  return React.createElement("div", { className: "container" },
+    React.createElement("h1", null, "semanticache"),
+    React.createElement("div", { className: "subtitle" }, "Local semantic caching demo for LLM calls"),
+
+    React.createElement("div", { className: "panel" },
+      React.createElement("form", { onSubmit: handleAsk, className: "input-row" },
+        React.createElement("input", {
+          type: "text",
+          placeholder: "Ask something...",
+          value: prompt,
+          onChange: (e) => setPrompt(e.target.value),
+        }),
+        React.createElement("button", { type: "submit", disabled: loading },
+          loading ? "Asking..." : "Ask"
+        )
+      ),
+      result && React.createElement("div", { className: "result" },
+        React.createElement("span", {
+          className: "badge " + (result.cache_hit ? "badge-hit" : "badge-miss")
+        }, result.cache_hit ? "Cache HIT" : "Cache MISS"),
+        React.createElement("div", { className: "meta" },
+          result.similarity_score != null && React.createElement("span", null,
+            "Similarity: " + result.similarity_score
+          ),
+          React.createElement("span", null, "Latency: " + result.latency_ms + " ms")
+        ),
+        React.createElement("div", { className: "response-box" }, result.response)
+      )
+    ),
+
+    stats && React.createElement("div", { className: "panel" },
+      React.createElement("div", { style: { marginBottom: "0.5rem", fontWeight: 600, color: "#94a3b8" } }, "Stats"),
+      React.createElement("div", { className: "stats-grid" },
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, stats.hit_rate_percent + "%"),
+          React.createElement("div", { className: "stat-label" }, "Hit Rate")
+        ),
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, stats.total_calls),
+          React.createElement("div", { className: "stat-label" }, "Total Calls")
+        ),
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, stats.cache_hits),
+          React.createElement("div", { className: "stat-label" }, "Hits")
+        ),
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, stats.cache_misses),
+          React.createElement("div", { className: "stat-label" }, "Misses")
+        ),
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, "$" + stats.estimated_cost_saved.toFixed(4)),
+          React.createElement("div", { className: "stat-label" }, "Cost Saved")
+        ),
+        React.createElement("div", { className: "stat-card" },
+          React.createElement("div", { className: "stat-value" }, (stats.estimated_time_saved_ms / 1000).toFixed(1) + "s"),
+          React.createElement("div", { className: "stat-label" }, "Time Saved")
+        )
+      )
+    ),
+
+    React.createElement("div", { className: "panel" },
+      React.createElement("div", { style: { marginBottom: "0.5rem", fontWeight: 600, color: "#94a3b8" } }, "Recent Cache Entries"),
+      entries.length === 0
+        ? React.createElement("div", { className: "empty" }, "No entries yet. Ask something!")
+        : React.createElement("table", null,
+            React.createElement("thead", null,
+              React.createElement("tr", null,
+                React.createElement("th", null, "Prompt"),
+                React.createElement("th", null, "Response"),
+                React.createElement("th", null, "Time")
+              )
+            ),
+            React.createElement("tbody", null,
+              entries.map((e, i) =>
+                React.createElement("tr", { key: i },
+                  React.createElement("td", { className: "truncate", title: e.prompt }, e.prompt),
+                  React.createElement("td", { className: "truncate", title: e.response }, e.response),
+                  React.createElement("td", null, formatTime(e.timestamp))
+                )
+              )
+            )
+          )
+    )
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>

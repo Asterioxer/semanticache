@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+semanticache/__init__.py
+semanticache/cache.py
+semanticache/embedder.py
+semanticache/stats.py
+semanticache/store.py
+semanticache.egg-info/PKG-INFO
+semanticache.egg-info/SOURCES.txt
+semanticache.egg-info/dependency_links.txt
+semanticache.egg-info/entry_points.txt
+semanticache.egg-info/requires.txt
+semanticache.egg-info/top_level.txt
+semanticache/demo/__init__.py
+semanticache/demo/cli.py
+semanticache/demo/server.py
+tests/test_semanticache.py

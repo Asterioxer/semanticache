@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semanticache"
+version = "0.1.0"
+description = "Lightweight semantic caching for LLM API calls"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "semanticache", email = "semanticache@example.com"}
+]
+keywords = ["llm", "cache", "semantic", "embedding", "openai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "sentence-transformers>=2.3.0",
+]
+
+[project.optional-dependencies]
+redis = ["redis>=5.0.0"]
+openai = ["openai>=1.0.0"]
+demo = ["fastapi>=0.109.0", "uvicorn>=0.27.0"]
+dev = ["pytest>=8.0.0", "httpx>=0.26.0"]
+
+[project.scripts]
+semanticache = "semanticache.demo.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/example/semanticache"
+Repository = "https://github.com/example/semanticache"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["semanticache*"]

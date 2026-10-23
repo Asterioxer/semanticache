@@ -1,0 +1,2 @@
+[console_scripts]
+semanticache = semanticache.demo.cli:main

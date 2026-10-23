@@ -1,0 +1,16 @@
+numpy>=1.24.0
+sentence-transformers>=2.3.0
+
+[demo]
+fastapi>=0.109.0
+uvicorn>=0.27.0
+
+[dev]
+pytest>=8.0.0
+httpx>=0.26.0
+
+[openai]
+openai>=1.0.0
+
+[redis]
+redis>=5.0.0
